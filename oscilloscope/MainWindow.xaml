@@ -1,0 +1,169 @@
+﻿<Window x:Class="oscilloscope.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:oscilloscope"
+        xmlns:vm="clr-namespace:oscilloscope.ViewModel"
+        xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+        mc:Ignorable="d"
+        Title="Осциллограф" Height="560" Width="1000"
+        MinHeight="420" MinWidth="760">
+    <Window.Resources>
+        <local:HexToBrushConverter x:Key="HexToBrush" />
+    </Window.Resources>
+
+    <Grid Margin="8">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="330" />
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0" BorderBrush="#CCC" BorderThickness="1" CornerRadius="4">
+            <ScottPlot:WpfPlot x:Name="PlotControl" />
+        </Border>
+
+        <GridSplitter Grid.Column="1" Width="6" Margin="4,0" HorizontalAlignment="Center"
+                      VerticalAlignment="Stretch" ShowsPreview="False" />
+
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <GroupBox Header="Общие настройки" Padding="6">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Диапазон, с:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <TextBox Text="{Binding TimeRange, UpdateSourceTrigger=PropertyChanged, Delay=200}"
+                                 ToolTip="Диапазон времени в секундах (дробное число, напр. 0.5 или 1.5)"
+                                 Grid.Column="1" />
+                    </Grid>
+                    <CheckBox Margin="0,6,0,0" IsChecked="{Binding AutoScaleY}"
+                               Content="Автомасштаб по Y" />
+                    <CheckBox Margin="0,4,0,0" IsChecked="{Binding PhaseInDegrees}"
+                               Content="Фаза в градусах (иначе радианы)" />
+                    <CheckBox Margin="0,4,0,0" IsChecked="{Binding ShowSum}"
+                               Content="Показывать сумму сигналов" />
+                    <WrapPanel Margin="0,8,0,0">
+                        <Button MinWidth="72" Command="{Binding ResetTimeCommand}" Content="Сброс" />
+                        <Button x:Name="PauseButton" MinWidth="72" Margin="6,0,0,0" Click="OnPauseClicked">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Content" Value="Пауза" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsRunning}" Value="False">
+                                            <Setter Property="Content" Value="Пуск" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button MinWidth="72" Margin="6,0,0,0" Click="OnRefreshClicked" Content="Обновить" />
+                    </WrapPanel>
+                    <WrapPanel Margin="0,6,0,0">
+                        <Button MinWidth="72" Click="OnSaveClicked" Content="Сохранить" />
+                        <Button MinWidth="72" Margin="6,0,0,0" Click="OnLoadClicked" Content="Загрузить" />
+                    </WrapPanel>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Grid.Row="1" Header="Синусоиды" Padding="6">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Waves}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:SineWaveModel}">
+                                <Border BorderBrush="#CCC" BorderThickness="1" CornerRadius="4"
+                                        Margin="0,0,0,8" Padding="6"
+                                        Background="{Binding ColorHex, Converter={StaticResource HexToBrush}}">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Opacity" Value="1" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsVisible}" Value="False">
+                                                    <Setter Property="Opacity" Value="0.45" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="6" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="6" CornerRadius="3" Margin="0,0,8,0"
+                                                Background="{Binding ColorHex, Converter={StaticResource HexToBrush}}" />
+
+                                        <StackPanel Grid.Column="1">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold" />
+                                                <CheckBox Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                          IsChecked="{Binding IsVisible}" Content="видна" />
+                                            </Grid>
+
+                                            <Grid Margin="0,6,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition />
+                                                    <ColumnDefinition />
+                                                    <ColumnDefinition />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0" Margin="0,0,4,0">
+                                                    <TextBlock Text="A" Foreground="#666" />
+                                                    <TextBox Text="{Binding Amplitude, UpdateSourceTrigger=PropertyChanged, Delay=150}" />
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1" Margin="0,0,4,0">
+                                                    <TextBlock Text="f, Гц" Foreground="#666" />
+                                                    <TextBox Text="{Binding Frequency, UpdateSourceTrigger=PropertyChanged, Delay=150}" />
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2">
+                                                    <TextBlock Text="φ" Foreground="#666" />
+                                                    <TextBox Text="{Binding Phase, UpdateSourceTrigger=PropertyChanged, Delay=150}" />
+                                                </StackPanel>
+                                            </Grid>
+
+                                            <ComboBox Margin="0,6,0,0"
+                                                      ItemsSource="{x:Static vm:WavePalette.Items}"
+                                                      SelectedValuePath="Hex"
+                                                      SelectedValue="{Binding ColorHex}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Border Width="14" Height="14" CornerRadius="3" Margin="0,0,6,0"
+                                                                    BorderBrush="#999" BorderThickness="1"
+                                                                    Background="{Binding Hex, Converter={StaticResource HexToBrush}}" />
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                        </StackPanel>
+
+                                        <Button Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Top"
+                                                Content="✕" ToolTip="Удалить синусоиду"
+                                                Command="{Binding DataContext.RemoveWaveCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </GroupBox>
+
+            <Button Grid.Row="2" Margin="0,8,0,0" Content="+ Добавить синусоиду"
+                    Command="{Binding AddWaveCommand}" />
+        </Grid>
+    </Grid>
+</Window>
